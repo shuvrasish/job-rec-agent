@@ -1,17 +1,15 @@
 services:
   job-recommendation-agent:
     container_name: job-recommendation-agent
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     
     volumes:
-      - ./resumes:/app/resumes:ro
+      - ./resumes:/app/resumes
 
     env_file:
       - .env
     
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
 
-    restart: "no"
+    restart: unless-stopped

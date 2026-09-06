@@ -1,6 +1,3 @@
-from typing import Annotated, TypedDict
-
-from langchain_core.messages import BaseMessage
 from langchain_openrouter import ChatOpenRouter
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import StateGraph, START, END
@@ -71,7 +68,6 @@ You have access to tools for:
 - reading the resume
 - searching for jobs
 - crawling job postings
-- saving jobs to a tracker
 - sending email
 
 Follow this process:
@@ -223,3 +219,35 @@ graph.add_conditional_edges(
 graph.add_edge("tools", "llm")
 
 agent = graph.compile()
+
+def run_agent(
+    resume_path: str,
+    to_email: str,
+    additional_instructions: str = "",
+):
+    user_message = f"""
+        Run the job recommendation workflow.
+
+        Resume path:
+        {resume_path}
+
+        Send the final email to:
+        {to_email}
+
+        Additional user instructions:
+        {additional_instructions or "None"}
+
+        Use the provided resume and follow the job search requirements
+        from the system prompt.
+    """
+
+    return agent.invoke(
+        {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": user_message,
+                }
+            ]
+        }
+    )

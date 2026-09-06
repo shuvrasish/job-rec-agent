@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="business">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Job Scout</title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/daisyui@5"
+        rel="stylesheet"
+        type="text/css"
+    />
+
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+
+<body class="min-h-screen bg-base-200">
+
+<div class="mx-auto max-w-2xl px-6 py-12">
+
+    <!-- Header -->
+    <header class="mb-10">
+
+        <div class="mb-3 flex items-center justify-between">
+
+            <div class="flex items-center gap-2">
+                <div class="text-2xl">✦</div>
+
+                <h1 class="text-xl font-bold">
+                    Job Scout
+                </h1>
+            </div>
+
+            <div class="badge badge-success badge-outline gap-2">
+                <span class="h-2 w-2 rounded-full bg-success"></span>
+                Ready
+            </div>
+
+        </div>
+
+        <h2 class="text-4xl font-bold tracking-tight">
+            Find your next role.
+        </h2>
+
+        <p class="mt-3 text-base-content/60">
+            Search for software engineering jobs that actually
+            match your resume.
+        </p>
+
+    </header>
+
+
+    <!-- Form -->
+    <form id="job-form" class="space-y-5">
+
+        <!-- Resume -->
+        <div class="card border border-base-300 bg-base-100 shadow-sm">
+
+            <div class="card-body">
+
+                <div class="flex items-center justify-between">
+
+                    <div>
+                        <h3 class="font-semibold">
+                            Resume
+                        </h3>
+
+                        <p class="text-sm text-base-content/50">
+                            {% if resume_exists %}
+                                Your current resume
+                            {% else %}
+                                Upload your resume
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    <div class="text-2xl">
+                        📄
+                    </div>
+
+                </div>
+
+
+                {% if resume_exists %}
+
+                <div class="mt-4 flex items-center justify-between
+                            rounded-xl bg-base-200 p-4">
+
+                    <div>
+
+                        <div class="font-medium">
+                            resume.pdf
+                        </div>
+
+                        <div class="text-xs text-base-content/50">
+                            PDF • Stored locally
+                        </div>
+
+                    </div>
+
+                    <label class="btn btn-sm btn-ghost">
+
+                        Replace
+
+                        <input
+                            type="file"
+                            name="resume"
+                            accept=".pdf"
+                            class="hidden"
+                        />
+
+                    </label>
+
+                </div>
+
+                {% else %}
+
+                <input
+                    type="file"
+                    name="resume"
+                    accept=".pdf"
+                    class="file-input file-input-bordered mt-4 w-full"
+                />
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+
+        <!-- Email -->
+        <div class="card border border-base-300 bg-base-100 shadow-sm">
+
+            <div class="card-body">
+
+                <label class="label">
+                    <span class="label-text font-semibold">
+                        Send results to
+                    </span>
+                </label>
+
+                <input
+                    type="email"
+                    name="to_email"
+                    value="{{ default_email }}"
+                    placeholder="you@example.com"
+                    class="input input-bordered w-full"
+                    required
+                />
+
+            </div>
+
+        </div>
+
+
+        <!-- Instructions -->
+        <div class="card border border-base-300 bg-base-100 shadow-sm">
+
+            <div class="card-body">
+
+                <label class="label">
+                    <span class="label-text font-semibold">
+                        Additional instructions
+                    </span>
+
+                    <span class="label-text-alt text-base-content/40">
+                        Optional
+                    </span>
+                </label>
+
+                <textarea
+                    name="instructions"
+                    class="textarea textarea-bordered h-28 w-full"
+                    placeholder="e.g. Focus more on backend, AI and platform engineering roles."
+                ></textarea>
+
+            </div>
+
+        </div>
+
+
+        <!-- Submit -->
+        <button
+            id="submit-button"
+            type="submit"
+            class="btn btn-primary btn-lg w-full"
+        >
+            <span>✦</span>
+            Find matching jobs
+        </button>
+
+    </form>
+
+
+    <!-- Status -->
+    <div
+        id="status-card"
+        class="alert mt-6 border border-base-300 bg-base-100 shadow-sm"
+    >
+
+        <div>
+
+            <div class="font-semibold">
+                Agent status
+            </div>
+
+            <div
+                id="status"
+                class="text-sm text-base-content/60"
+            >
+                {{ status.message or "Ready to search." }}
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- Footer -->
+    <div class="mt-8 text-center text-xs text-base-content/40">
+        LangGraph · Gemini · Firecrawl
+    </div>
+
+</div>
+
+
+<script>
+
+const form = document.getElementById("job-form");
+const status = document.getElementById("status");
+const button = document.getElementById("submit-button");
+
+
+form.addEventListener("submit", async (event) => {
+
+    event.preventDefault();
+
+    button.disabled = true;
+    button.innerHTML = `
+        <span class="loading loading-spinner"></span>
+        Searching...
+    `;
+
+    status.innerText = "Starting job recommendation agent...";
+
+    try {
+
+        const formData = new FormData(form);
+
+        const response = await fetch("/run", {
+            method: "POST",
+            body: formData
+        });
+
+        const result = await response.json();
+
+        status.innerText = result.message;
+
+        if (result.status === "started") {
+            pollStatus();
+        } else {
+            resetButton();
+        }
+
+    } catch (error) {
+
+        status.innerText = "Failed to start the agent.";
+        resetButton();
+
+    }
+
+});
+
+
+async function pollStatus() {
+
+    const response = await fetch("/status");
+    const result = await response.json();
+
+    status.innerText = result.message || result.status;
+
+    if (result.status === "running") {
+
+        setTimeout(pollStatus, 3000);
+
+    } else {
+
+        resetButton();
+
+    }
+
+}
+
+
+function resetButton() {
+
+    button.disabled = false;
+
+    button.innerHTML = `
+        <span>✦</span>
+        Find matching jobs
+    `;
+
+}
+
+</script>
+
+</body>
+</html>

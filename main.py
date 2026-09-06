@@ -1,14 +1,26 @@
-import sys
-
-from agent.agent import agent
+import os
+from pathlib import Path
+from agent.agent import run_agent
 
 
 def main():
-    content = f"""
+    resume_path = Path(
+        os.getenv("RESUME_PATH", "resumes/resume.pdf")
+    ).resolve()
+
+    if not resume_path.exists():
+        raise FileNotFoundError(
+            f"Resume not found: {resume_path}"
+        )
+
+    to_email = os.getenv("EMAIL_TO")
+    if not to_email:
+        raise RuntimeError(
+            "EMAIL_TO is not set."
+        )
+    
+    instructions = f"""
         Find software engineering jobs matching this resume.
-
-        The resume is located at: resumes/resume.pdf
-
         Find jobs in Hyderabad and Bengaluru, India (Preferably Hyderabad or Remote).
 
         Requirements:
@@ -19,15 +31,10 @@ def main():
         - Prefer direct company postings
     """
 
-    result = agent.invoke(
-        {
-            "messages": [
-                {
-                    "role": "user",
-                    "content": content
-                }
-            ]
-        }
+    result = run_agent(
+        resume_path=str(resume_path),
+        to_email=os.getenv("EMAIL_TO", ""),
+        additional_instructions=instructions,
     )
 
     final_message = result["messages"][-1]

@@ -1,33 +1,28 @@
+import os
+from typing import Any
+
+from dotenv import load_dotenv
 from langchain_openrouter import ChatOpenRouter
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import StateGraph, START, END
-from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
 
 from agent.utils.tools import TOOLS
-from dotenv import load_dotenv
 from agent.utils.models import JobAgentState
 
-import os
+load_dotenv()
 
-load_dotenv()  # Load environment variables from .env file
 
 def build_llm_google() -> ChatGoogleGenerativeAI:
     api_key = os.getenv("GOOGLE_API_KEY")
 
     if not api_key:
-        raise RuntimeError(
-            "GOOGLE_API_KEY is not set. "
-            "Add it to your .env file."
-        )
+        raise RuntimeError("GOOGLE_API_KEY is not set.")
 
     return ChatGoogleGenerativeAI(
-        model=os.getenv(
-            "GOOGLE_MODEL",
-            "",
-        ),
+        model=os.getenv("GOOGLE_MODEL", ""),
         thinking_level="medium",
-        include_thoughts=True,
+        include_thoughts=False,
     )
 
 
@@ -35,16 +30,10 @@ def build_llm_openrouter() -> ChatOpenRouter:
     api_key = os.getenv("OPENROUTER_API_KEY")
 
     if not api_key:
-        raise RuntimeError(
-            "OPENROUTER_API_KEY is not set. "
-            "Add it to your .env file."
-        )
+        raise RuntimeError("OPENROUTER_API_KEY is not set.")
 
     return ChatOpenRouter(
-        model=os.getenv(
-            "OPENROUTER_MODEL",
-            "",
-        ),
+        model=os.getenv("OPENROUTER_MODEL", ""),
         api_key=api_key,
         temperature=0,
         max_retries=2,
@@ -52,9 +41,7 @@ def build_llm_openrouter() -> ChatOpenRouter:
 
 
 LLM = build_llm_google()
-
 LLM_WITH_TOOLS = LLM.bind_tools(TOOLS)
-
 TOOL_NODE = ToolNode(TOOLS)
 
 
@@ -89,10 +76,6 @@ Search specifically for:
 
 - Software Engineer
 - SDE
-- SDE II
-- MTS
-- MTS II
-- Senior Software Engineer
 - Backend Engineer
 - Full-Stack Engineer
 - closely related software engineering roles
@@ -122,7 +105,6 @@ Verify:
 - whether the job is still active
 - job URL
 - application URL
-- Job ID
 
 5. Prefer direct company career pages over job aggregators.
 
@@ -140,7 +122,8 @@ Give each job a match score from 0 to 100.
 
 Only include jobs that are genuinely relevant.
 
-8. Once you have enough verified jobs, send the complete recommendations using send_email.
+8. Once you have enough verified jobs, send the complete
+recommendations using send_email.
 
 The email should contain:
 
@@ -172,23 +155,21 @@ Do not invent information.
 If information cannot be verified, say "Not verified".
 
 You should decide yourself which tools to call and when.
+
+Do not expose private chain-of-thought or hidden reasoning.
+Provide concise summaries of your actions when useful.
 """
 
 
 def agent_node(state: JobAgentState):
     response = LLM_WITH_TOOLS.invoke(
         [
-            {
-                "role": "system",
-                "content": SYSTEM_PROMPT,
-            },
+            {"role": "system", "content": SYSTEM_PROMPT},
             *state["messages"],
         ]
     )
 
-    return {
-        "messages": [response]
-    }
+    return {"messages": [response]}
 
 
 def should_continue(state: JobAgentState):
@@ -220,12 +201,12 @@ graph.add_edge("tools", "llm")
 
 agent = graph.compile()
 
-def run_agent(
+def build_user_message(
     resume_path: str,
     to_email: str,
     additional_instructions: str = "",
-):
-    user_message = f"""
+) -> str:
+    return f"""
         Run the job recommendation workflow.
 
         Resume path:
@@ -241,7 +222,45 @@ def run_agent(
         from the system prompt.
     """
 
+
+def run_agent(
+    resume_path: str,
+    to_email: str,
+    additional_instructions: str = "",
+):
+    """
+    Normal non-streaming execution.
+
+    Used by main.py / GitHub Actions / scheduled jobs.
+    """
+
     return agent.invoke(
+        {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": build_user_message(
+                        resume_path,
+                        to_email,
+                        additional_instructions,
+                    ),
+                }
+            ]
+        }
+    )
+
+def run_agent_streaming(
+    resume_path: str,
+    to_email: str,
+    additional_instructions: str = "",
+):
+    user_message = build_user_message(
+        resume_path,
+        to_email,
+        additional_instructions,
+    )
+
+    for chunk in agent.stream(
         {
             "messages": [
                 {
@@ -249,5 +268,7 @@ def run_agent(
                     "content": user_message,
                 }
             ]
-        }
-    )
+        },
+        stream_mode="updates",
+    ):
+        yield chunk

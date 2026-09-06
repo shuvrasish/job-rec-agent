@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="business">
+<html lang="en" data-theme="corporate">
 
 <head>
     <meta charset="UTF-8">
@@ -7,306 +7,605 @@
 
     <title>Job Scout</title>
 
-    <link
-        href="https://cdn.jsdelivr.net/npm/daisyui@5"
-        rel="stylesheet"
-        type="text/css"
-    />
-
+    <!-- Tailwind -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-</head>
 
-<body class="min-h-screen bg-base-200">
-
-<div class="mx-auto max-w-2xl px-6 py-12">
-
-    <!-- Header -->
-    <header class="mb-10">
-
-        <div class="mb-3 flex items-center justify-between">
-
-            <div class="flex items-center gap-2">
-                <div class="text-2xl">✦</div>
-
-                <h1 class="text-xl font-bold">
-                    Job Scout
-                </h1>
-            </div>
-
-            <div class="badge badge-success badge-outline gap-2">
-                <span class="h-2 w-2 rounded-full bg-success"></span>
-                Ready
-            </div>
-
-        </div>
-
-        <h2 class="text-4xl font-bold tracking-tight">
-            Find your next role.
-        </h2>
-
-        <p class="mt-3 text-base-content/60">
-            Search for software engineering jobs that actually
-            match your resume.
-        </p>
-
-    </header>
-
-
-    <!-- Form -->
-    <form id="job-form" class="space-y-5">
-
-        <!-- Resume -->
-        <div class="card border border-base-300 bg-base-100 shadow-sm">
-
-            <div class="card-body">
-
-                <div class="flex items-center justify-between">
-
-                    <div>
-                        <h3 class="font-semibold">
-                            Resume
-                        </h3>
-
-                        <p class="text-sm text-base-content/50">
-                            {% if resume_exists %}
-                                Your current resume
-                            {% else %}
-                                Upload your resume
-                            {% endif %}
-                        </p>
-                    </div>
-
-                    <div class="text-2xl">
-                        📄
-                    </div>
-
-                </div>
-
-
-                {% if resume_exists %}
-
-                <div class="mt-4 flex items-center justify-between
-                            rounded-xl bg-base-200 p-4">
-
-                    <div>
-
-                        <div class="font-medium">
-                            resume.pdf
-                        </div>
-
-                        <div class="text-xs text-base-content/50">
-                            PDF • Stored locally
-                        </div>
-
-                    </div>
-
-                    <label class="btn btn-sm btn-ghost">
-
-                        Replace
-
-                        <input
-                            type="file"
-                            name="resume"
-                            accept=".pdf"
-                            class="hidden"
-                        />
-
-                    </label>
-
-                </div>
-
-                {% else %}
-
-                <input
-                    type="file"
-                    name="resume"
-                    accept=".pdf"
-                    class="file-input file-input-bordered mt-4 w-full"
-                />
-
-                {% endif %}
-
-            </div>
-
-        </div>
-
-
-        <!-- Email -->
-        <div class="card border border-base-300 bg-base-100 shadow-sm">
-
-            <div class="card-body">
-
-                <label class="label">
-                    <span class="label-text font-semibold">
-                        Send results to
-                    </span>
-                </label>
-
-                <input
-                    type="email"
-                    name="to_email"
-                    value="{{ default_email }}"
-                    placeholder="you@example.com"
-                    class="input input-bordered w-full"
-                    required
-                />
-
-            </div>
-
-        </div>
-
-
-        <!-- Instructions -->
-        <div class="card border border-base-300 bg-base-100 shadow-sm">
-
-            <div class="card-body">
-
-                <label class="label">
-                    <span class="label-text font-semibold">
-                        Additional instructions
-                    </span>
-
-                    <span class="label-text-alt text-base-content/40">
-                        Optional
-                    </span>
-                </label>
-
-                <textarea
-                    name="instructions"
-                    class="textarea textarea-bordered h-28 w-full"
-                    placeholder="e.g. Focus more on backend, AI and platform engineering roles."
-                ></textarea>
-
-            </div>
-
-        </div>
-
-
-        <!-- Submit -->
-        <button
-            id="submit-button"
-            type="submit"
-            class="btn btn-primary btn-lg w-full"
-        >
-            <span>✦</span>
-            Find matching jobs
-        </button>
-
-    </form>
-
-
-    <!-- Status -->
-    <div
-        id="status-card"
-        class="alert mt-6 border border-base-300 bg-base-100 shadow-sm"
-    >
-
-        <div>
-
-            <div class="font-semibold">
-                Agent status
-            </div>
-
-            <div
-                id="status"
-                class="text-sm text-base-content/60"
-            >
-                {{ status.message or "Ready to search." }}
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- Footer -->
-    <div class="mt-8 text-center text-xs text-base-content/40">
-        LangGraph · Gemini · Firecrawl
-    </div>
-
-</div>
-
-
-<script>
-
-const form = document.getElementById("job-form");
-const status = document.getElementById("status");
-const button = document.getElementById("submit-button");
-
-
-form.addEventListener("submit", async (event) => {
-
-    event.preventDefault();
-
-    button.disabled = true;
-    button.innerHTML = `
-        <span class="loading loading-spinner"></span>
-        Searching...
-    `;
-
-    status.innerText = "Starting job recommendation agent...";
-
-    try {
-
-        const formData = new FormData(form);
-
-        const response = await fetch("/run", {
-            method: "POST",
-            body: formData
-        });
-
-        const result = await response.json();
-
-        status.innerText = result.message;
-
-        if (result.status === "started") {
-            pollStatus();
-        } else {
-            resetButton();
+    <!-- daisyUI -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css">
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+
+    <style>
+        body {
+            background:
+                radial-gradient(circle at top,
+                    rgba(99, 102, 241, 0.08),
+                    transparent 35%),
+                #f8fafc;
         }
 
-    } catch (error) {
+        .activity-scroll {
+            max-height: 520px;
+            overflow-y: auto;
+        }
 
-        status.innerText = "Failed to start the agent.";
-        resetButton();
+        .event-card {
+            animation: slideIn 0.2s ease-out;
+        }
 
-    }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(4px);
+            }
 
-});
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen">
+
+    <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+
+        <!-- Header -->
+        <header class="mb-8 flex items-center justify-between">
+
+            <div>
+                <h1 class="text-3xl font-bold tracking-tight">
+                    Job Scout
+                </h1>
+
+                <p class="mt-1 text-sm text-base-content/60">
+                    Find software engineering jobs that match your resume.
+                </p>
+            </div>
+
+            <div id="status-badge">
+                {% if status == "running" %}
+                <div class="badge badge-warning gap-2">
+                    <span class="loading loading-xs"></span>
+                    Running
+                </div>
+                {% elif status == "complete" %}
+                <div class="badge badge-success">
+                    Complete
+                </div>
+                {% elif status == "failed" %}
+                <div class="badge badge-error">
+                    Failed
+                </div>
+                {% else %}
+                <div class="badge badge-neutral">
+                    Ready
+                </div>
+                {% endif %}
+            </div>
+
+        </header>
 
 
-async function pollStatus() {
+        <!-- Main form -->
+        <form id="job-form" hx-post="/run" hx-target="#run-result" hx-swap="innerHTML" hx-encoding="multipart/form-data"
+            class="space-y-5">
 
-    const response = await fetch("/status");
-    const result = await response.json();
+            <!-- Resume -->
+            <div class="card border border-base-300 bg-base-100 shadow-sm">
+                <div class="card-body">
 
-    status.innerText = result.message || result.status;
+                    <div class="flex items-center justify-between">
 
-    if (result.status === "running") {
+                        <div>
+                            <h2 class="card-title text-lg">
+                                Resume
+                            </h2>
 
-        setTimeout(pollStatus, 3000);
+                            <p class="mt-1 text-sm text-base-content/60">
+                                Your resume is stored locally on the server.
+                            </p>
+                        </div>
 
-    } else {
+                        {% if resume_exists %}
+                        <div class="badge badge-success badge-outline">
+                            Ready
+                        </div>
+                        {% else %}
+                        <div class="badge badge-warning badge-outline">
+                            Required
+                        </div>
+                        {% endif %}
 
-        resetButton();
+                    </div>
 
-    }
+                    <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
 
-}
+                        <div class="flex-1 rounded-xl bg-base-200 px-4 py-3">
+
+                            <div class="flex items-center gap-3">
+
+                                <div class="text-2xl">
+                                    📄
+                                </div>
+
+                                <div>
+                                    <div class="font-medium">
+                                        resume.pdf
+                                    </div>
+
+                                    <div class="text-xs text-base-content/50">
+                                        Saved resume
+                                    </div>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <label class="btn btn-outline">
+
+                            Replace resume
+
+                            <input type="file" name="resume" accept=".pdf,application/pdf" class="hidden"
+                                onchange="showSelectedResume(this)">
+
+                        </label>
+
+                    </div>
+
+                    <div id="selected-resume" class="mt-2 hidden text-sm text-primary"></div>
+
+                </div>
+            </div>
 
 
-function resetButton() {
+            <!-- Email -->
+            <div class="card border border-base-300 bg-base-100 shadow-sm">
 
-    button.disabled = false;
+                <div class="card-body">
 
-    button.innerHTML = `
-        <span>✦</span>
-        Find matching jobs
+                    <h2 class="card-title text-lg">
+                        Email
+                    </h2>
+
+                    <p class="text-sm text-base-content/60">
+                        Where should the recommendations be sent?
+                    </p>
+
+                    <input type="email" name="to_email" value="{{ default_email }}" placeholder="you@example.com"
+                        class="input input-bordered mt-2 w-full" required>
+
+                </div>
+
+            </div>
+
+
+            <!-- Additional instructions -->
+            <div class="card border border-base-300 bg-base-100 shadow-sm">
+
+                <div class="card-body">
+
+                    <h2 class="card-title text-lg">
+                        Additional instructions
+                    </h2>
+
+                    <p class="text-sm text-base-content/60">
+                        Optional instructions for this search.
+                    </p>
+
+                    <textarea name="additional_instructions" class="textarea textarea-bordered mt-2 h-28 w-full"
+                        placeholder="Example: Prioritize backend roles and companies using Python or Java."></textarea>
+
+                </div>
+
+            </div>
+
+
+            <!-- Action -->
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+
+                <button id="run-button" type="submit" class="btn btn-primary btn-lg">
+                    <span>Find matching jobs</span>
+                </button>
+
+                <div id="run-result"></div>
+
+            </div>
+
+        </form>
+
+
+        <!-- Activity -->
+        <section class="mt-8">
+
+            <div class="mb-3 flex items-center justify-between">
+
+                <div>
+                    <h2 class="text-xl font-semibold">
+                        Agent activity
+                    </h2>
+
+                    <p class="text-sm text-base-content/50">
+                        Live view of the agent's actions and tool calls.
+                    </p>
+                </div>
+
+                <button class="btn btn-ghost btn-sm" onclick="clearActivity()">
+                    Clear
+                </button>
+
+            </div>
+
+
+            <div id="activity" class="activity-scroll rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm">
+
+                <div id="activity-empty"
+                    class="flex min-h-48 items-center justify-center text-center text-sm text-base-content/40">
+                    Start a search to see agent activity.
+                </div>
+
+            </div>
+
+        </section>
+
+    </div>
+
+
+    <script>
+
+        let eventSource = null;
+
+
+        function escapeHtml(value) {
+
+            const div = document.createElement("div");
+
+            div.textContent = value ?? "";
+
+            return div.innerHTML;
+        }
+
+
+        function formatJson(value) {
+
+            try {
+                return JSON.stringify(value, null, 2);
+            } catch {
+                return String(value);
+            }
+        }
+
+
+        function addActivity(html) {
+
+            const activity = document.getElementById("activity");
+
+            const empty = document.getElementById("activity-empty");
+
+            if (empty) {
+                empty.remove();
+            }
+
+            activity.insertAdjacentHTML("beforeend", html);
+
+            activity.scrollTop = activity.scrollHeight;
+        }
+
+
+        function addStatus(message) {
+
+            addActivity(`
+        <div class="event-card mb-3 rounded-xl bg-base-200 p-4">
+            <div class="flex gap-3">
+                <div class="text-lg">ℹ️</div>
+                <div>
+                    <div class="font-medium">
+                        ${escapeHtml(message)}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `);
+        }
+
+
+        function addAgentEvent(event) {
+
+            addActivity(`
+        <div class="event-card mb-3 rounded-xl border border-base-300 p-4">
+
+            <div class="flex gap-3">
+
+                <div class="text-lg">
+                    🧠
+                </div>
+
+                <div class="min-w-0 flex-1">
+
+                    <div class="mb-1 text-xs font-semibold uppercase tracking-wide text-base-content/50">
+                        Agent
+                    </div>
+
+                    <div class="whitespace-pre-wrap text-sm">
+                        ${escapeHtml(event.message)}
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    `);
+        }
+
+
+        function addToolCallEvent(event) {
+
+            addActivity(`
+        <div class="event-card mb-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
+
+            <div class="flex gap-3">
+
+                <div class="text-lg">
+                    🔧
+                </div>
+
+                <div class="min-w-0 flex-1">
+
+                    <div class="font-semibold">
+                        ${escapeHtml(event.tool)}
+                    </div>
+
+                    <div class="mt-1 text-xs text-base-content/50">
+                        Tool call
+                    </div>
+
+                    <details class="mt-3">
+
+                        <summary class="cursor-pointer text-sm font-medium">
+                            View input
+                        </summary>
+
+                        <pre class="mt-2 overflow-x-auto rounded-lg bg-base-300 p-3 text-xs">${escapeHtml(formatJson(event.input))}</pre>
+
+                    </details>
+
+                </div>
+
+            </div>
+
+        </div>
+    `);
+        }
+
+
+        function addToolResultEvent(event) {
+
+            addActivity(`
+        <div class="event-card mb-3 rounded-xl border border-success/20 bg-success/5 p-4">
+
+            <div class="flex gap-3">
+
+                <div class="text-lg">
+                    ✓
+                </div>
+
+                <div class="min-w-0 flex-1">
+
+                    <div class="font-semibold">
+                        ${escapeHtml(event.tool)}
+                    </div>
+
+                    <div class="mt-1 text-xs text-base-content/50">
+                        Tool result
+                    </div>
+
+                    <details class="mt-3">
+
+                        <summary class="cursor-pointer text-sm font-medium">
+                            View result
+                        </summary>
+
+                        <pre class="mt-2 max-h-72 overflow-auto rounded-lg bg-base-300 p-3 text-xs whitespace-pre-wrap">${escapeHtml(event.output)}</pre>
+
+                    </details>
+
+                </div>
+
+            </div>
+
+        </div>
+    `);
+        }
+
+
+        function addCompleteEvent(event) {
+
+            addActivity(`
+        <div class="event-card mb-3 alert alert-success">
+
+            <span class="text-lg">
+                🎉
+            </span>
+
+            <span>
+                ${escapeHtml(event.message)}
+            </span>
+
+        </div>
+    `);
+        }
+
+
+        function addErrorEvent(event) {
+
+            addActivity(`
+        <div class="event-card mb-3 alert alert-error">
+
+            <span class="text-lg">
+                ⚠️
+            </span>
+
+            <span>
+                ${escapeHtml(event.message)}
+            </span>
+
+        </div>
+    `);
+        }
+
+
+        function handleEvent(event) {
+
+            switch (event.type) {
+
+                case "status":
+                    addStatus(event.message);
+                    break;
+
+                case "agent":
+                    addAgentEvent(event);
+                    break;
+
+                case "tool_call":
+                    addToolCallEvent(event);
+                    break;
+
+                case "tool_result":
+                    addToolResultEvent(event);
+                    break;
+
+                case "complete":
+                    addCompleteEvent(event);
+                    setFinishedState(false);
+                    break;
+
+                case "error":
+                    addErrorEvent(event);
+                    setFinishedState(true);
+                    break;
+            }
+        }
+
+
+        function connectToEvents() {
+
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            eventSource = new EventSource("/events");
+
+            eventSource.onmessage = function (event) {
+
+                try {
+                    const data = JSON.parse(event.data);
+
+                    handleEvent(data);
+
+                } catch (error) {
+
+                    console.error(
+                        "Unable to parse SSE event:",
+                        error
+                    );
+
+                }
+
+            };
+
+            eventSource.onerror = function () {
+
+                eventSource.close();
+
+            };
+        }
+
+
+        function setRunningState() {
+
+            const button = document.getElementById("run-button");
+
+            button.disabled = true;
+
+            button.innerHTML = `
+        <span class="loading loading-spinner"></span>
+        Running agent...
     `;
 
-}
+            document.getElementById("status-badge").innerHTML = `
+        <div class="badge badge-warning gap-2">
+            <span class="loading loading-xs"></span>
+            Running
+        </div>
+    `;
+        }
 
-</script>
+
+        function setFinishedState(failed) {
+
+            const button = document.getElementById("run-button");
+
+            button.disabled = false;
+
+            button.innerHTML = `
+        <span>
+            Find matching jobs
+        </span>
+    `;
+
+            document.getElementById("status-badge").innerHTML = failed
+                ? `<div class="badge badge-error">Failed</div>`
+                : `<div class="badge badge-success">Complete</div>`;
+        }
+
+
+        function clearActivity() {
+
+            document.getElementById("activity").innerHTML = `
+        <div
+            id="activity-empty"
+            class="flex min-h-48 items-center justify-center text-center text-sm text-base-content/40"
+        >
+            Start a search to see agent activity.
+        </div>
+    `;
+        }
+
+
+        function showSelectedResume(input) {
+
+            const display = document.getElementById("selected-resume");
+
+            if (!input.files.length) {
+                display.classList.add("hidden");
+                return;
+            }
+
+            display.textContent =
+                `Selected: ${input.files[0].name}`;
+
+            display.classList.remove("hidden");
+        }
+
+
+        document
+            .getElementById("job-form")
+            .addEventListener("htmx:beforeRequest", function () {
+
+                clearActivity();
+
+                setRunningState();
+
+                connectToEvents();
+
+            });
+
+    </script>
 
 </body>
+
 </html>

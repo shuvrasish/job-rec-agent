@@ -613,6 +613,14 @@ dependencies = [
     { name = "uvicorn", extra = ["standard"] },
 ]
 
+[package.dev-dependencies]
+web = [
+    { name = "fastapi" },
+    { name = "jinja2" },
+    { name = "python-multipart" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "fastapi" },
@@ -629,6 +637,14 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1,<2" },
     { name = "python-multipart" },
     { name = "uvicorn", extras = ["standard"] },
+]
+
+[package.metadata.requires-dev]
+web = [
+    { name = "fastapi", specifier = ">=0.141.1" },
+    { name = "jinja2", specifier = ">=3.1.6" },
+    { name = "python-multipart", specifier = ">=0.0.32" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.52.4" },
 ]
 
 [[package]]

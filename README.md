@@ -1,159 +1,33 @@
-# Job Recommendation Agent
+# Job Scout
 
-An AI-powered job recommendation agent that finds, verifies, and ranks software engineering jobs based on your resume and preferences.
+AI-powered job recommendation agent built with **LangGraph**.
 
-The agent uses **LangGraph** to orchestrate the workflow, **Firecrawl** to search and crawl job postings, **Gemini** to analyze and rank jobs, and **Brevo** to send the final recommendations by email.
+Job Scout uses your resume to find relevant Software Engineering jobs, verify job postings, evaluate the match, and send the recommendations to your email.
 
 ## Features
 
-- 📄 Reads and analyzes your resume
-- 🔎 Searches for relevant software engineering jobs
-- 🌐 Crawls job postings to verify details
-- 🎯 Matches jobs against your experience and technical skills
-- 📊 Scores jobs based on relevance
-- 📧 Sends recommendations directly to your email
-- 🔗 Prefers direct company job postings
-- 🧠 Uses an LLM to decide when and which tools to use
-- 🔭 Supports LangSmith tracing for agent observability
+- Resume-based job search
+- Search for recently posted Software Engineering roles
+- Resume/job match scoring
+- Job posting verification
+- Email recommendations via Brevo
+- Live agent activity in the web UI
+- LangSmith tracing
+- Run locally, on a Raspberry Pi, or with GitHub Actions
 
-## Architecture
+## Tech Stack
 
-```text
-                    ┌──────────────┐
-                    │    Resume    │
-                    └──────┬───────┘
-                           │
-                           ▼
-                    ┌──────────────┐
-                    │   LangGraph  │
-                    │     Agent    │
-                    └──────┬───────┘
-                           │
-                    ┌──────┴───────┐
-                    │              │
-                    ▼              ▼
-              ┌──────────┐   ┌──────────┐
-              │ Firecrawl│   │  Gemini  │
-              │  Search  │   │   LLM    │
-              └────┬─────┘   └──────────┘
-                   │
-                   ▼
-              ┌──────────┐
-              │  Crawl   │
-              │  Jobs    │
-              └────┬─────┘
-                   │
-                   ▼
-              ┌──────────┐
-              │  Gemini  │
-              │  Ranking │
-              └────┬─────┘
-                   │
-                   ▼
-              ┌──────────┐
-              │  Brevo   │
-              │  Email   │
-              └──────────┘
-```
-
-## Agent Workflow
-
-```text
-START
-  │
-  ▼
-LLM
-  │
-  ├── Tool call required ──► ToolNode
-  │                              │
-  │                              ▼
-  │                             LLM
-  │                              │
-  │                              └──► ...
-  │
-  └── No tool call ───────────► END
-```
-
-The LLM decides when to:
-
-1. Read the resume
-2. Search for jobs
-3. Crawl promising job postings
-4. Verify job details
-5. Rank matching jobs
-6. Send the final recommendations by email
-
-## Job Matching
-
-The agent is designed to find roles such as:
-
-- Software Engineer
-- Software Development Engineer (SDE)
-- Backend Engineer
-- Full-Stack Engineer
-- Other closely related engineering roles
-
-It evaluates factors such as:
-
-- Years of experience
-- Programming languages
-- Frameworks
-- Databases
-- Cloud technologies
-- System design experience
-- Job responsibilities
-- Seniority
-- Location
-- Posting date
-- Overall technical fit
-
-Each verified job receives a **match score from 0–100**.
-
-## Tools
-
-### `read_resume`
-
-Reads the user's PDF resume and extracts the text for analysis.
-
-### `search_jobs`
-
-Uses Firecrawl to search the web for relevant job postings.
-
-### `crawl_job`
-
-Crawls individual job postings to verify information such as:
-
-- Company
-- Job title
-- Location
-- Required experience
-- Technologies
-- Posting date
-- Job status
-- Job URL
-- Application URL
-
-Failed crawls are handled gracefully so that one unsupported website doesn't stop the entire workflow.
-
-### `send_email`
-
-Converts the generated Markdown recommendation into HTML and sends it using Brevo.
-
-## Example Output
-
-The email contains a table similar to:
-
-| Company      | Job Title         | Location  | Experience | Match | Job Link    |
-| ------------ | ----------------- | --------- | ---------- | ----: | ----------- |
-| Example Corp | Software Engineer | Bengaluru | 3–5 years  |    94 | Job posting |
-| Example Inc  | Backend Engineer  | Hyderabad | 3–6 years  |    89 | Job posting |
-
-It also includes:
-
-- **Top 5 recommendations**
-- **Why each job matches**
-- **Notable skill gaps**
-- Application links when available
+- Python 3.14
+- LangGraph
+- Google Gemini
+- Firecrawl
+- FastAPI
+- HTMX
+- Tailwind CSS
+- daisyUI
+- Brevo
+- LangSmith
+- Docker
 
 ## Project Structure
 
@@ -166,44 +40,74 @@ job-rec-agent/
 │       ├── __init__.py
 │       ├── models.py
 │       └── tools.py
-│
+├── web/
+│   ├── __init__.py
+│   ├── app.py
+│   └── templates/
+│       └── index.html
 ├── resumes/
 │   └── resume.pdf
-│
+├── .github/
+│   └── workflows/
+│       └── job-agent.yml
 ├── main.py
 ├── Dockerfile
 ├── docker-compose.yml
-├── .dockerignore
-├── .env
 ├── pyproject.toml
 └── uv.lock
 ```
 
 ## Requirements
 
-- Python 3.12
+- Python 3.14
 - [uv](https://docs.astral.sh/uv/)
-- Docker (optional)
+- Docker (for Raspberry Pi deployment)
 - Google Gemini API key
 - Firecrawl API key
 - Brevo API key
-- LangSmith account (optional)
+- LangSmith API key (optional)
 
-## Setup
+## Environment Variables
 
-Clone the repository:
+Create a `.env` file:
 
-```bash
-git clone <repository-url>
-cd job-rec-agent
+```env
+GOOGLE_API_KEY="your-google-api-key"
+GOOGLE_MODEL="gemini-3.5-flash-lite"
+
+FIRECRAWL_API_KEY="your-firecrawl-api-key"
+
+BREVO_API_KEY="your-brevo-api-key"
+EMAIL_FROM="your-email@example.com"
+EMAIL_TO="your-email@example.com"
+
+LANGSMITH_TRACING=true
+LANGSMITH_ENDPOINT="https://api.smith.langchain.com"
+LANGSMITH_API_KEY="your-langsmith-api-key"
+LANGSMITH_PROJECT="job-recommendation-agent"
 ```
 
-Create the virtual environment and install dependencies:
+Do not commit `.env`.
+
+## Local Setup
+
+Install Python 3.14:
 
 ```bash
-uv venv --python 3.12
-source .venv/bin/activate
+uv python install 3.14
+uv python pin 3.14
+```
+
+Install dependencies:
+
+```bash
 uv sync
+```
+
+For the web UI:
+
+```bash
+uv sync --group web
 ```
 
 Add your resume:
@@ -212,100 +116,182 @@ Add your resume:
 resumes/resume.pdf
 ```
 
-Create a `.env` file:
+## Run the Agent
 
-```env
-GOOGLE_API_KEY=your-google-api-key
-GOOGLE_MODEL=gemini-3.5-flash-lite
-
-FIRECRAWL_API_KEY=your-firecrawl-api-key
-
-BREVO_API_KEY=your-brevo-api-key
-EMAIL_FROM=your-email@example.com
-EMAIL_TO=your-email@example.com
-
-LANGSMITH_TRACING=true
-LANGSMITH_ENDPOINT=https://api.smith.langchain.com
-LANGSMITH_API_KEY=your-langsmith-api-key
-LANGSMITH_PROJECT=job-recommendation-agent
-```
-
-Do **not** commit `.env` or API keys to the repository.
-
-## Run Locally
-
-Run the agent directly:
+Run the agent without the web UI:
 
 ```bash
 uv run python main.py
 ```
 
-The agent will:
+The agent will search for jobs, evaluate the matches, and send the recommendations to `EMAIL_TO`.
+
+## Run the Web UI
+
+Start the FastAPI server:
+
+```bash
+uv run uvicorn web.app:app --reload --port 8080
+```
+
+Open:
 
 ```text
-Resume
-  ↓
-Analyze skills & experience
-  ↓
-Search jobs
-  ↓
-Crawl promising postings
-  ↓
-Verify & rank
-  ↓
-Send email
+http://localhost:8080
 ```
 
-## Run with Docker
+### Using the UI
 
-Build the image:
+1. Upload or replace your resume.
+2. Enter the email address for the recommendations.
+3. Optionally provide additional search instructions.
+4. Click **Find matching jobs**.
+5. Monitor the agent's live activity.
+6. Receive the final recommendations by email.
 
-```bash
-docker compose build
-```
+The activity panel shows:
 
-Run the agent:
-
-```bash
-docker compose run --rm job-agent
-```
-
-The Docker container uses the same `.env` configuration and resume as the local setup.
-
-## LangSmith
-
-LangSmith tracing can be enabled through:
-
-```env
-LANGSMITH_TRACING=true
-```
-
-This allows you to inspect:
-
-- LLM calls
+- Agent messages
 - Tool calls
 - Tool inputs
-- Tool outputs
-- Agent execution flow
-- Token usage
-- Execution latency
+- Tool results
+- Errors
+- Completion status
 
-This is particularly useful for debugging the agent's search and crawling behavior.
+## Raspberry Pi
 
-## Design Goals
+Clone the repository:
 
-The project intentionally keeps the agent simple.
+```bash
+git clone <repository-url>
+cd job-rec-agent
+```
 
-The current implementation focuses on:
+Create `.env` and add your API keys.
 
-- Resume-based job matching
-- Reliable job verification
-- Minimal tool set
-- LLM-driven tool selection
-- Email delivery
+Add your resume:
 
-Additional functionality such as job tracking, persistence, dashboards, and automated follow-ups can be added later without changing the core agent architecture.
+```text
+resumes/resume.pdf
+```
 
-## Disclaimer
+Build and start the application:
 
-Job availability and job-posting information can change quickly. The agent attempts to verify postings before recommending them, but job details should always be checked on the employer's application page before applying.
+```bash
+docker compose up -d --build
+```
+
+Check the container:
+
+```bash
+docker compose ps
+```
+
+View logs:
+
+```bash
+docker compose logs -f
+```
+
+The application runs on port `8080`.
+
+### Access through Tailscale
+
+If you want direct access through your Pi's Tailscale hostname:
+
+```text
+https://aether.taild24737.ts.net:8080/
+```
+
+Use:
+
+```yaml
+ports:
+  - "8080:8080"
+```
+
+in `docker-compose.yml`.
+
+If Tailscale Serve was previously configured, remove it:
+
+```bash
+sudo tailscale serve reset
+```
+
+Check Tailscale:
+
+```bash
+tailscale status
+```
+
+> HTTPS on port `8080` requires TLS to be configured for the application. If the application is serving plain HTTP, use `http://aether.taild24737.ts.net:8080/`.
+
+## Run Automatically with Cron
+
+On the Raspberry Pi or another machine, edit your crontab:
+
+```bash
+crontab -e
+```
+
+Run the agent every 3 hours:
+
+```cron
+0 */3 * * * cd /home/YOUR_USERNAME/job-rec-agent && /usr/bin/docker compose run --rm job-agent uv run python main.py >> /home/YOUR_USERNAME/job-rec-agent/cron.log 2>&1
+```
+
+Check the cron configuration:
+
+```bash
+crontab -l
+```
+
+View logs:
+
+```bash
+tail -f ~/job-rec-agent/cron.log
+```
+
+Test the command manually:
+
+```bash
+cd ~/job-rec-agent
+docker compose run --rm job-agent uv run python main.py
+```
+
+## GitHub Actions
+
+GitHub Actions can run the agent without the web UI.
+
+### Add Repository Secrets
+
+Go to:
+
+**GitHub → Repository → Settings → Secrets and variables → Actions**
+
+Add:
+
+```text
+GOOGLE_API_KEY
+GOOGLE_MODEL
+FIRECRAWL_API_KEY
+BREVO_API_KEY
+EMAIL_FROM
+EMAIL_TO
+LANGSMITH_TRACING
+LANGSMITH_ENDPOINT
+LANGSMITH_API_KEY
+LANGSMITH_PROJECT
+RESUME_BASE64
+```
+
+## Security
+
+Never commit:
+
+```text
+.env
+resumes/resume.pdf
+```
+
+Keep API keys in environment variables or GitHub Actions secrets.

@@ -1,0 +1,43 @@
+name: Job Recommendation Agent
+
+on:
+  schedule:
+    - cron: "0 */3 * * *"
+      timezone: "Asia/Kolkata"
+
+  workflow_dispatch:
+
+jobs:
+  run-agent:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create environment file
+        run: |
+          cat > .env <<'EOF'
+          LANGSMITH_TRACING=${{ secrets.LANGSMITH_TRACING }}
+          LANGSMITH_ENDPOINT=${{ secrets.LANGSMITH_ENDPOINT }}
+          LANGSMITH_API_KEY=${{ secrets.LANGSMITH_API_KEY }}
+          LANGSMITH_PROJECT=${{ secrets.LANGSMITH_PROJECT }}
+
+          BREVO_API_KEY=${{ secrets.BREVO_API_KEY }}
+          EMAIL_FROM=${{ secrets.EMAIL_FROM }}
+          EMAIL_TO=${{ secrets.EMAIL_TO }}
+
+          FIRECRAWL_API_KEY=${{ secrets.FIRECRAWL_API_KEY }}
+
+          GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}
+          GOOGLE_MODEL=${{ secrets.GOOGLE_MODEL }}
+          EOF
+
+      - name: Build Docker image
+        run: docker compose build
+
+      - name: Run job agent
+        run: docker compose run --rm job-agent

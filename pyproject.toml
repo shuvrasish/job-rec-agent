@@ -1,0 +1,18 @@
+[project]
+name = "job-rec-agent"
+version = "1.0.0"
+description = "AI-powered job recommendation agent that finds, verifies, and ranks software engineering jobs based on a user's resume."
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+  "pydantic>=2.11,<3",
+  "langgraph>=0.6,<2",
+  "langchain-core>=1.5.5,<2",
+  "langchain>=1.4.0",
+  "python-dotenv>=1,<2",
+  "langchain-openrouter>=0.2.8,<1",
+  "pypdf>=6.17.0",
+  "firecrawl>=4.41.0",
+  "markdown>=3.10.3",
+  "langchain-google-genai>=4.4.0",
+]

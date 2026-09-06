@@ -1,0 +1,11 @@
+services:
+  job-recommendation-agent:
+    container_name: job-recommendation-agent
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    env_file:
+      - .env
+
+    restart: "no"

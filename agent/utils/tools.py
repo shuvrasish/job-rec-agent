@@ -67,34 +67,48 @@ def crawl_job(url: str) -> str:
             Try another source or skip this job.
         """
 
-
-
-
 @tool("send_email")
-def send_email(subject: str, content: str) -> str:
-    """Send the job recommendations as a formatted HTML email using Brevo."""
+def send_email(
+    subject: str,
+    content: str,
+    to_email: str | None = None,
+) -> str:
+    """Send job recommendations as a formatted HTML email using Brevo."""
+
+    api_key = os.getenv("BREVO_API_KEY")
+    sender_email = os.getenv("EMAIL_FROM")
+    recipient = to_email or os.getenv("EMAIL_TO")
+
+    if not api_key:
+        raise ValueError("BREVO_API_KEY is not configured.")
+
+    if not sender_email:
+        raise ValueError("EMAIL_FROM is not configured.")
+
+    if not recipient:
+        raise ValueError(
+            "No recipient email provided and EMAIL_TO is not configured."
+        )
 
     html_content = markdown.markdown(
         content,
-        extensions=["tables"]
+        extensions=["tables"],
     )
 
     response = requests.post(
         "https://api.brevo.com/v3/smtp/email",
         headers={
             "accept": "application/json",
-            "api-key": os.environ["BREVO_API_KEY"],
+            "api-key": api_key,
             "content-type": "application/json",
         },
         json={
             "sender": {
-                "email": os.environ["EMAIL_FROM"],
+                "email": sender_email,
                 "name": "Job Recommendation Agent",
             },
             "to": [
-                {
-                    "email": os.environ["EMAIL_TO"],
-                }
+                {"email": recipient}
             ],
             "subject": subject,
             "htmlContent": html_content,
@@ -104,8 +118,7 @@ def send_email(subject: str, content: str) -> str:
 
     response.raise_for_status()
 
-    return "Email sent successfully."
-
+    return f"Email sent successfully to {recipient}."
 
 TOOLS = [
     read_resume,

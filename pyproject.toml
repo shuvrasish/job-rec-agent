@@ -23,8 +23,7 @@ dependencies = [
 
 [dependency-groups]
 web = [
-    "fastapi>=0.141.1",
-    "jinja2>=3.1.6",
-    "python-multipart>=0.0.32",
-    "uvicorn[standard]>=0.52.4",
+    "fastapi",
+    "uvicorn[standard]",
+    "python-multipart",
 ]

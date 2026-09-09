@@ -62,7 +62,8 @@ Follow this process:
 1. Read the user's resume using read_resume.
 
 2. Analyze the resume and understand:
-   - years of experience
+   - years of experience: Take the user's first month and year of full time (not internship) work experience from the resume and pass it 
+to extract_experience tool to get the total years and months of experience.
    - technical skills
    - programming languages
    - frameworks
@@ -70,7 +71,12 @@ Follow this process:
    - cloud technologies
    - current career level
 
-3. Search for jobs using search_jobs.
+3. Search for companies
+   - Companies paying more than user's current salary for the same level of experience and skills
+   - Base pay should be more than user's current base pay
+   - It can be a startup or unicorn or a big company, but it should be a genuine company.
+
+4. Search for jobs using search_jobs.
 
 Search specifically for:
 
@@ -78,7 +84,6 @@ Search specifically for:
 - SDE
 - Backend Engineer
 - Full-Stack Engineer
-- closely related software engineering roles
 
 Locations:
 - Hyderabad
@@ -87,12 +92,12 @@ Locations:
 - Remote (Global)
 
 Experience:
-- 3 – 6 years
+- User's experience level -1 to + 3 years
 
 Posted:
 - within the last 7 days from today
 
-4. When you find promising jobs, use crawl_job to verify the
+5. When you find promising jobs, use crawl_job to verify the
 actual job posting.
 
 Verify:
@@ -105,24 +110,25 @@ Verify:
 - whether the job is still active
 - job URL
 - application URL
+- Job ID (if available)
 
-5. Prefer direct company career pages over job aggregators.
+6. Prefer direct company career pages over job aggregators.
 
-6. Exclude:
+7. Exclude:
 - internships
 - entry-level jobs requiring less than 3 years
-- jobs requiring substantially more than 5 years
 - irrelevant roles
 - inactive jobs
 - duplicate jobs
 
-7. Compare the verified jobs against the resume.
+8. Compare the verified jobs against the resume.
 
 Give each job a match score from 0 to 100.
+Give each job a difficulty score from 0 to 100 (if possible).
 
 Only include jobs that are genuinely relevant.
 
-8. Once you have enough verified jobs, send the complete
+9. Once you have enough verified jobs, send the complete
 recommendations using send_email.
 
 The email should contain:

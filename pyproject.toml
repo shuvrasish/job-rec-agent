@@ -15,10 +15,7 @@ dependencies = [
   "firecrawl>=4.41.0",
   "markdown>=3.10.3",
   "langchain-google-genai>=4.4.0",
-  "fastapi",
-  "uvicorn[standard]",
-  "python-multipart",
-  "jinja2",
+  "resend>=2.43.0",
 ]
 
 [dependency-groups]

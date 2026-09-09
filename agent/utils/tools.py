@@ -1,11 +1,12 @@
-import csv
+from datetime import datetime
 import os
 
 from firecrawl import FirecrawlApp
 from langchain_core.tools import tool
 from pypdf import PdfReader
-import requests
-import markdown
+import resend
+from resend.exceptions import ResendError
+
 
 from dotenv import load_dotenv
 
@@ -29,6 +30,18 @@ def read_resume(file_path: str) -> str:
         text.append(page.extract_text() or "")
 
     return "\n".join(text)
+
+@tool("extract_experience")
+def extract_experience(start_date: str) -> str:
+    """Extract years and months of experience from a start date in YYYY-MM format."""
+    
+    target_date = datetime.strptime(start_date, "%Y-%m")
+    current_date = datetime.now()
+    total_months = (target_date.year * 12 + target_date.month) - (current_date.year * 12 + current_date.month)
+    years = abs(total_months) // 12
+    months = abs(total_months) % 12
+
+    return f"{years} years and {months} months" if years > 0 else f"{months} months"
 
 
 @tool("search_jobs")
@@ -73,56 +86,39 @@ def send_email(
     content: str,
     to_email: str | None = None,
 ) -> str:
-    """Send job recommendations as a formatted HTML email using Brevo."""
+    """Send job recommendations as a formatted HTML email using Resend."""
 
-    api_key = os.getenv("BREVO_API_KEY")
-    sender_email = os.getenv("EMAIL_FROM")
+    api_key = os.getenv("RESEND_API_KEY")
     recipient = to_email or os.getenv("EMAIL_TO")
-
+    
     if not api_key:
-        raise ValueError("BREVO_API_KEY is not configured.")
-
-    if not sender_email:
-        raise ValueError("EMAIL_FROM is not configured.")
+        raise ValueError("RESEND_API_KEY is not configured.")
 
     if not recipient:
         raise ValueError(
             "No recipient email provided and EMAIL_TO is not configured."
         )
-
-    html_content = markdown.markdown(
-        content,
-        extensions=["tables"],
-    )
-
-    response = requests.post(
-        "https://api.brevo.com/v3/smtp/email",
-        headers={
-            "accept": "application/json",
-            "api-key": api_key,
-            "content-type": "application/json",
-        },
-        json={
-            "sender": {
-                "email": sender_email,
-                "name": "Job Recommendation Agent",
-            },
-            "to": [
-                {"email": recipient}
-            ],
+    
+    resend.api_key = api_key
+    
+    try:
+        params: resend.Emails.SendParams = {
+            "from": "Job Scout <onboarding@resend.dev>",
+            "to": [recipient],
             "subject": subject,
-            "htmlContent": html_content,
-        },
-        timeout=30,
-    )
-
-    response.raise_for_status()
+            "html": content,
+            "reply_to": os.getenv("EMAIL_FROM", ""),
+        }
+        resend.Emails.send(params)
+    except ResendError as error:
+        raise RuntimeError(f"Failed to send email: {error}") from error
 
     return f"Email sent successfully to {recipient}."
 
 TOOLS = [
     read_resume,
+    extract_experience,
     search_jobs,
     crawl_job,
-    send_email,
+    send_email
 ]

@@ -23,12 +23,15 @@ def main():
         Find software engineering jobs matching this resume.
         Find jobs in Hyderabad and Bengaluru, India (Preferably Hyderabad or Remote).
 
+        Current Salary: 41 LPA (33 Base + 8 Bonus)
+
         Requirements:
-        - 3 – 6 years of experience
         - Posted within the last 7 days
         - Software Engineer / SDE / Backend / Full-Stack
         - Strong match with my resume
         - Prefer direct company postings
+        - Product Based companies are preferred
+        - Offering a salary of 42 LPA or more (Base + Bonus)
     """
 
     result = run_agent(

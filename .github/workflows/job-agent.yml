@@ -2,7 +2,7 @@ name: Job Recommendations
 
 on:
   schedule:
-    - cron: "0 */3 * * *"
+    - cron: "15 */3 * * *"
       timezone: "Asia/Kolkata"
 
   workflow_dispatch:
@@ -33,7 +33,7 @@ jobs:
 
           FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
 
-          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
 

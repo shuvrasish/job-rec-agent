@@ -3,7 +3,7 @@ name = "job-rec-agent"
 version = "1.0.0"
 description = "AI-powered job recommendation agent that finds, verifies, and ranks software engineering jobs based on a user's resume."
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.10"
 dependencies = [
   "pydantic>=2.11,<3",
   "langgraph>=0.6,<2",
@@ -16,6 +16,7 @@ dependencies = [
   "markdown>=3.10.3",
   "langchain-google-genai>=4.4.0",
   "resend>=2.43.0",
+  "crawl4ai>=0.9.3",
 ]
 
 [dependency-groups]

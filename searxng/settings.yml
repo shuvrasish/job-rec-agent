@@ -1,0 +1,30 @@
+use_default_settings: true
+
+general:
+  instance_name: "Job Recommendation Agent"
+
+search:
+  formats:
+    - html
+    - json
+
+server:
+  bind_address: "0.0.0.0"
+  port: 8080
+  secret_key: "0MNEN8f1ncaMQkr2dsxAFjf0QDHbvoKU"
+
+ui:
+  default_locale: "en"
+
+engines:
+  - name: brave
+    engine: brave
+    disabled: false
+
+  - name: duckduckgo
+    engine: duckduckgo
+    disabled: false
+
+  - name: bing
+    engine: bing
+    disabled: false

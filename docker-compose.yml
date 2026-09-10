@@ -2,14 +2,25 @@ services:
   job-recommendation-agent:
     container_name: job-recommendation-agent
     build: .
-    
     volumes:
       - ./resumes:/app/resumes
-
     env_file:
       - .env
-    
     ports:
       - "127.0.0.1:8080:8080"
-
     restart: unless-stopped
+    networks:
+      - job-scout-network
+      
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng
+    restart: unless-stopped
+    volumes:
+      - ./searxng:/etc/searxng:rw
+    networks:
+      - job-scout-network
+
+networks:
+  job-scout-network:
+    driver: bridge

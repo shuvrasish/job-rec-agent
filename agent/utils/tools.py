@@ -1,9 +1,12 @@
+import asyncio
 from datetime import datetime
 import os
 
-from firecrawl import FirecrawlApp
+from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig
+# from firecrawl import FirecrawlApp
 from langchain_core.tools import tool
 from pypdf import PdfReader
+import requests
 import resend
 from resend.exceptions import ResendError
 
@@ -13,9 +16,9 @@ from dotenv import load_dotenv
 load_dotenv()  # Load environment variables from .env file
 
 
-firecrawl = FirecrawlApp(
-    api_key=os.environ["FIRECRAWL_API_KEY"]
-)
+# firecrawl = FirecrawlApp(
+#     api_key=os.environ["FIRECRAWL_API_KEY"]
+# )
 
 
 @tool("read_resume")
@@ -44,17 +47,49 @@ def extract_experience(start_date: str) -> str:
     return f"{years} years and {months} months" if years > 0 else f"{months} months"
 
 
+SEARXNG_URL = os.getenv(
+    "SEARXNG_URL",
+    "http://localhost:8080",
+)
+
+
 @tool("search_jobs")
 def search_jobs(query: str) -> str:
     """Search the web for job postings matching a query."""
 
-    results = firecrawl.search(
-        query=query,
-        limit=10,
-    )
+    try:
+        response = requests.get(
+            f"{SEARXNG_URL}/search",
+            params={
+                "q": query,
+                "format": "json",
+            },
+            timeout=30,
+        )
 
-    return str(results)
+        response.raise_for_status()
 
+        data = response.json()
+
+        results = []
+
+        for result in data.get("results", [])[:10]:
+            results.append({
+                "title": result.get("title"),
+                "url": result.get("url"),
+                "content": result.get("content"),
+            })
+
+        return str(results)
+
+    except Exception as e:
+        return f"""
+            Unable to search the web.
+
+            Query: {query}
+
+            Reason: {type(e).__name__}: {e}
+        """
 
 @tool("crawl_job")
 def crawl_job(url: str) -> str:
@@ -64,9 +99,37 @@ def crawl_job(url: str) -> str:
     instead of raising an exception.
     """
 
+    async def _crawl():
+        browser_config = BrowserConfig(
+            headless=True,
+        )
+
+        crawler_config = CrawlerRunConfig(
+            word_count_threshold=50,
+        )
+
+        async with AsyncWebCrawler(config=browser_config) as crawler:
+            return await crawler.arun(
+                url=url,
+                config=crawler_config,
+            )
+
     try:
-        result = firecrawl.scrape_url(url)
-        return str(result)
+        result = asyncio.run(_crawl())
+
+        if not result.success:
+            return f"""
+                Unable to crawl this job posting.
+
+                URL: {url}
+
+                Reason: {result.error_message}
+
+                Do not treat this as a verified job posting.
+                Try another source or skip this job.
+            """
+
+        return result.markdown
 
     except Exception as e:
         return f"""

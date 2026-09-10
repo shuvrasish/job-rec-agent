@@ -17,7 +17,7 @@ Job Scout uses your resume to find relevant Software Engineering jobs, verify jo
 
 ## Tech Stack
 
-- Python 3.14
+- Python 3.12
 - LangGraph
 - Google Gemini
 - Firecrawl
@@ -59,7 +59,7 @@ job-rec-agent/
 
 ## Requirements
 
-- Python 3.14
+- Python 3.12
 - [uv](https://docs.astral.sh/uv/)
 - Docker (for Raspberry Pi deployment)
 - Google Gemini API key
@@ -91,11 +91,11 @@ Do not commit `.env`.
 
 ## Local Setup
 
-Install Python 3.14:
+Install Python 3.12:
 
 ```bash
-uv python install 3.14
-uv python pin 3.14
+uv python install 3.12
+uv python pin 3.12
 ```
 
 Install dependencies:

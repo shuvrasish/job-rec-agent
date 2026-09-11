@@ -4,6 +4,7 @@ services:
     build: .
     volumes:
       - ./resumes:/app/resumes
+      - playwright-cache:/root/.cache/ms-playwright
     env_file:
       - .env
     ports:
@@ -24,3 +25,6 @@ services:
 networks:
   job-scout-network:
     driver: bridge
+  
+volumes:
+  playwright-cache:

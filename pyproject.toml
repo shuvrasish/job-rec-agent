@@ -17,6 +17,8 @@ dependencies = [
   "langchain-google-genai>=4.4.0",
   "resend>=2.43.0",
   "crawl4ai>=0.9.3",
+  "sqlalchemy>=2.0.52",
+  "psycopg[binary]>=3.3.5",
 ]
 
 [dependency-groups]

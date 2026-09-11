@@ -3,7 +3,6 @@ from datetime import datetime
 import os
 
 from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig
-# from firecrawl import FirecrawlApp
 from langchain_core.tools import tool
 from pypdf import PdfReader
 import requests
@@ -13,13 +12,63 @@ from resend.exceptions import ResendError
 
 from dotenv import load_dotenv
 
+from agent.utils.db import get_unsent_job_ids, record_sent_jobs
+
 load_dotenv()  # Load environment variables from .env file
 
 
-# firecrawl = FirecrawlApp(
-#     api_key=os.environ["FIRECRAWL_API_KEY"]
-# )
+from urllib.parse import urlparse
 
+
+CAREER_INDEX_PATHS = {
+    "/careers",
+    "/career",
+    "/jobs",
+    "/job",
+    "/all-jobs",
+    "/open-positions",
+    "/openings",
+    "/job-openings",
+    "/opportunities",
+    "/job-search",
+    "/search",
+}
+
+
+def is_probable_job_posting_url(url: str) -> bool:
+    """Return False for obvious career/search/listing pages."""
+
+    if not url:
+        return False
+
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        return False
+
+    if parsed.scheme not in {"http", "https"}:
+        return False
+
+    path = parsed.path.lower().rstrip("/")
+
+    # Exact career/listing pages.
+    if path in CAREER_INDEX_PATHS:
+        return False
+
+    # Common listing/search pages.
+    listing_suffixes = (
+        "/all-jobs",
+        "/search",
+        "/search-results",
+        "/job-search",
+        "/open-positions",
+        "/job-openings",
+    )
+
+    if path.endswith(listing_suffixes):
+        return False
+
+    return True
 
 @tool("read_resume")
 def read_resume(file_path: str) -> str:
@@ -47,10 +96,7 @@ def extract_experience(start_date: str) -> str:
     return f"{years} years and {months} months" if years > 0 else f"{months} months"
 
 
-SEARXNG_URL = os.getenv(
-    "SEARXNG_URL",
-    "http://localhost:8080",
-)
+SEARXNG_URL = os.getenv("SEARXNG_URL")
 
 
 @tool("search_jobs")
@@ -73,12 +119,20 @@ def search_jobs(query: str) -> str:
 
         results = []
 
-        for result in data.get("results", [])[:10]:
+        for result in data.get("results", []):
+            url = result.get("url")
+            
+            if not is_probable_job_posting_url(url):
+                continue
+    
             results.append({
                 "title": result.get("title"),
-                "url": result.get("url"),
+                "url": url,
                 "content": result.get("content"),
             })
+            
+            if len(results) >= 10:
+                break
 
         return str(results)
 
@@ -93,10 +147,21 @@ def search_jobs(query: str) -> str:
 
 @tool("crawl_job")
 def crawl_job(url: str) -> str:
-    """Crawl a job posting URL and return its contents.
+    """
+        Crawl and inspect a candidate job URL.
 
-    If the website cannot be crawled, return an error message
-    instead of raising an exception.
+        The URL is NOT considered a verified job posting merely because
+        crawling succeeds.
+
+        The caller must inspect the crawled page and determine whether
+        it represents one specific active job opening rather than:
+        - a careers homepage
+        - a job search page
+        - a jobs listing page
+        - a department/engineering careers page
+        - a page containing multiple job postings
+
+        Only an individual job posting should be considered valid.
     """
 
     async def _crawl():
@@ -129,7 +194,16 @@ def crawl_job(url: str) -> str:
                 Try another source or skip this job.
             """
 
-        return result.markdown
+        return f"""
+            URL: {url}
+
+            IMPORTANT:
+            This URL has passed a basic URL-level heuristic, but it is NOT yet
+            verified as an individual job posting.
+
+            PAGE CONTENT:
+            {result.markdown}
+        """
 
     except Exception as e:
         return f"""
@@ -143,17 +217,39 @@ def crawl_job(url: str) -> str:
             Try another source or skip this job.
         """
 
+@tool("filter_unsent_jobs")
+def filter_unsent_jobs(
+    to_email: str,
+    job_ids: list[str],
+) -> str:
+    """Return only job IDs that have not already been emailed."""
+
+    try:
+        unsent = get_unsent_job_ids(
+            to_email,
+            job_ids,
+        )
+
+        return str(sorted(unsent))
+
+    except Exception as e:
+        return (
+            "Unable to filter previously sent jobs. "
+            f"Reason: {type(e).__name__}: {e}"
+        )
+
 @tool("send_email")
 def send_email(
     subject: str,
     content: str,
     to_email: str | None = None,
+    job_ids: list[str] | None = None,
 ) -> str:
-    """Send job recommendations as a formatted HTML email using Resend."""
+    """Send job recommendations as a formatted HTML email using Resend and record successfully sent job IDs."""
 
     api_key = os.getenv("RESEND_API_KEY")
     recipient = to_email or os.getenv("EMAIL_TO")
-    
+
     if not api_key:
         raise ValueError("RESEND_API_KEY is not configured.")
 
@@ -161,9 +257,11 @@ def send_email(
         raise ValueError(
             "No recipient email provided and EMAIL_TO is not configured."
         )
-    
+
+    job_ids = list(set(job_ids or []))
+
     resend.api_key = api_key
-    
+
     try:
         params: resend.Emails.SendParams = {
             "from": "Job Scout <onboarding@resend.dev>",
@@ -172,16 +270,31 @@ def send_email(
             "html": content,
             "reply_to": os.getenv("EMAIL_FROM", ""),
         }
-        resend.Emails.send(params)
-    except ResendError as error:
-        raise RuntimeError(f"Failed to send email: {error}") from error
 
-    return f"Email sent successfully to {recipient}."
+        resend.Emails.send(params)
+
+    except ResendError as error:
+        raise RuntimeError(
+            f"Failed to send email: {error}"
+        ) from error
+
+    print("calling recond sent jobs")
+    # Email succeeded, so now persist the jobs.
+    record_sent_jobs(
+        user_email=recipient,
+        job_ids=job_ids,
+    )
+
+    return (
+        f"Email sent successfully to {recipient}. "
+        f"Recorded {len(job_ids)} jobs."
+    )
 
 TOOLS = [
     read_resume,
     extract_experience,
     search_jobs,
     crawl_job,
-    send_email
+    filter_unsent_jobs,
+    send_email,
 ]
